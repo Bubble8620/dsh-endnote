@@ -40,11 +40,30 @@ why that is not obvious.
 
 ### Install
 
+From the npm registry:
+
+```powershell
+dsh plugin --profile web add dsh-endnote
+```
+
+Or from a local checkout (development):
+
 ```powershell
 dsh plugin --profile web add link:<absolute path to this directory>
 ```
 
 Then **restart DSH** — bundle lists are not hot-reloaded.
+
+> **Switching between the two?** Remove first. `dsh plugin` forwards to pnpm, so
+> `add dsh-endnote` while a `link:` of the same name is present is a no-op —
+> pnpm sees the dependency key already satisfied and skips resolution (verified:
+> it printed "resolution step is skipped" and left the link in place). So to go
+> from a checkout to the published version:
+>
+> ```powershell
+> dsh plugin --profile web remove dsh-endnote
+> dsh plugin --profile web add dsh-endnote
+> ```
 
 Uninstall:
 
@@ -260,9 +279,33 @@ is lower.
 
 ### 安装
 
+从 npm 仓库安装：
+
+```powershell
+dsh plugin --profile web add dsh-endnote
+```
+
+或从本地目录安装（开发用）：
+
 ```powershell
 dsh plugin --profile web add link:<本目录绝对路径>
 # 然后重启 DSH（bundle 列表不热更新）
+```
+
+> **两种方式互切时先卸载。** `dsh plugin` 是 pnpm 的透传，所以同名 `link:`
+> 还在的情况下执行 `add dsh-endnote` 是空操作——pnpm 认为依赖键已满足，直接
+> 跳过解析（实测输出 "resolution step is skipped"，链接原样保留）。从本地
+> 版切到发布版：
+>
+> ```powershell
+> dsh plugin --profile web remove dsh-endnote
+> dsh plugin --profile web add dsh-endnote
+> ```
+
+卸载：
+
+```powershell
+dsh plugin --profile web remove dsh-endnote
 ```
 
 ### 配置

@@ -6,6 +6,19 @@ versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — published to npm, with a registry install path
+
+`dsh-endnote@1.0.0` is on the npm registry, so the README now leads with the
+registry install (`dsh plugin --profile web add dsh-endnote`) and keeps the
+local-checkout `link:` form as the development route.
+
+Documented alongside it, because it costs a confusing few minutes otherwise:
+**switching between the two needs a `remove` first.** `dsh plugin` forwards to
+pnpm, and `add dsh-endnote` while a `link:` of the same name is present is a
+silent no-op — pnpm sees the dependency key already satisfied and prints
+"resolution step is skipped", leaving the link untouched (verified). Neither
+command fails, so without the note the install simply appears not to work.
+
 ### Security — three verified data-loss paths closed
 
 An independent adversarial audit wrote to copies of a real library and proved
