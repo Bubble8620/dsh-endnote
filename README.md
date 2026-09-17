@@ -41,11 +41,7 @@ why that is not obvious.
 ### Install
 
 ```powershell
-# from a local checkout
 dsh plugin --profile web add link:<absolute path to this directory>
-
-# or, once published
-dsh plugin --profile web add dsh-endnote
 ```
 
 Then **restart DSH** — bundle lists are not hot-reloaded.

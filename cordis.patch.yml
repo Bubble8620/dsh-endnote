@@ -6,8 +6,6 @@
 #
 # Install (no need to edit the profile patch by hand):
 #   dsh plugin --profile web add link:<absolute path to this directory>
-# or from a published package:
-#   dsh plugin --profile web add dsh-endnote
 #
 # All settings are optional. Leave `library` and `stagingDir` empty and the
 # scripts discover them (see scripts/endnote_paths.py):
