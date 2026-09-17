@@ -92,6 +92,32 @@ for (const t of registered.tools) {
     `${hasDesc ? '' : 'desc '}${hasOutput ? '' : 'output '}${hasExec ? '' : 'exec'}`.trim())
 }
 
+// A tool whose parameter schema is not an object root is rejected by the
+// provider before the model ever runs:
+//   400 Invalid schema for function 'endnote_add':
+//       schema must be a JSON Schema of 'type: "object"', got 'type: null'
+// The harness compiles the author's bare property map for us
+// (parameterSchemaSpecToJsonSchema), so what the registry hands back must be
+// the COMPILED shape — assert that, not the author-facing input.
+for (const t of registered.tools) {
+  const p = t.parameters
+  const objectRooted = Boolean(p) && typeof p === 'object' && p.type === 'object' &&
+    Boolean(p.properties) && typeof p.properties === 'object' && !Array.isArray(p.properties)
+  check(`tool ${t.name}: parameters are an object-rooted JSON Schema`, objectRooted,
+    JSON.stringify(p && p.type))
+  const requiredAtRoot = Boolean(p) && (p.required === undefined || Array.isArray(p.required))
+  check(`tool ${t.name}: required lifted to the schema root`, requiredAtRoot,
+    JSON.stringify(p && p.required))
+  const leaked = Boolean(p) && typeof p.properties === 'object' &&
+    Object.values(p.properties ?? {}).some((node) => node && Object.hasOwn(node, 'required'))
+  check(`tool ${t.name}: no author-only required marker left in a property`, !leaked)
+}
+for (const [toolName, key] of [['endnote_add', 'identifier'], ['paper_pdf', 'identifier']]) {
+  const t = registered.tools.find((candidate) => candidate.name === toolName)
+  const marked = Boolean(t) && Array.isArray(t.parameters.required) && t.parameters.required.includes(key)
+  check(`${toolName} marks "${key}" required`, marked, JSON.stringify(t && t.parameters.required))
+}
+
 console.log('\n=== apply() with registerTools=false ===')
 const reg2 = { tools: [], skills: [] }
 apply({

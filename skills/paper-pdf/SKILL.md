@@ -36,7 +36,7 @@ It prints the resolved paper, tries every mirror, and reports which route won.
 | Flag | Effect |
 |---|---|
 | `--out DIR` | where to save (default `<staging dir>`) |
-| `--text` | if no PDF is obtainable, save the full text instead (Europe PMC XML → markdown) |
+| `--text` | **skip the PDF download**, go straight to the full text (Europe PMC XML → markdown). The full text is saved *automatically* when no PDF can be obtained, so this flag is for when you want the text and don't want to spend time on PDF routes |
 | `--list` | enumerate every candidate URL and its result, downloading nothing |
 | `--json` | machine-readable result |
 

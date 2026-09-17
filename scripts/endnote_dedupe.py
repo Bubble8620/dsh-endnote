@@ -25,6 +25,7 @@ Usage
     python endnote_dedupe.py                        # trash duplicates (soft)
     python endnote_dedupe.py --keep lowest          # keep the lowest rec-number
     python endnote_dedupe.py --trash 13 15          # trash specific records
+    python endnote_dedupe.py --trash 13,15          # comma form works too
     python endnote_dedupe.py --restore 13           # untrash a record
 """
 
@@ -320,7 +321,15 @@ def set_trash(ids: list[int], value: int, *, hard: bool = False,
     """
     if not ids:
         return 0
-    verb = "hard delete" if (hard and value) else ("would trash" if dry else "trashing")
+    # The verb follows the DIRECTION of the write, not just the mechanism. A
+    # `--restore` reported as "trashing" is actively misleading in the one place
+    # the user looks to confirm what was done to their library.
+    if hard and value:
+        verb = "hard delete"
+    elif dry:
+        verb = "would trash" if value else "would restore"
+    else:
+        verb = "trashing" if value else "restoring"
     print(f"{verb} {len(ids)} record(s): {ids}")
     if dry:
         return 0
@@ -388,18 +397,57 @@ def set_trash(ids: list[int], value: int, *, hard: bool = False,
     return 0
 
 
+def rec_id_list(value: str) -> list[int]:
+    """Parse one --trash/--restore token: "28", "28,29" or "28, 29".
+
+    Both spellings are accepted because the sibling tools in this repo take a
+    comma-separated `--refs` list, so `--trash 28,29` is the form users reach
+    for first. It used to fail with argparse's bare
+    `invalid int value: '28,29'`, which reads like a broken tool rather than a
+    formatting difference. A typo here also aborts BEFORE any write, so it is
+    worth spending the extra parsing.
+    """
+    out: list[int] = []
+    for part in value.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            out.append(int(part))
+        except ValueError:
+            raise argparse.ArgumentTypeError(
+                f"{value!r} is not a record number list "
+                f"(use e.g. --trash 28 29 or --trash 28,29)"
+            ) from None
+    if not out:
+        raise argparse.ArgumentTypeError(
+            f"{value!r} contains no record numbers"
+        )
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Find/remove duplicate EndNote records.")
     ap.add_argument("--list", action="store_true", help="report only (no changes)")
     ap.add_argument("--dry-run", action="store_true", help="show what would be trashed")
     ap.add_argument("--keep", choices=["lowest", "complete"], default="complete",
                     help="which duplicate to keep (default: most complete)")
-    ap.add_argument("--trash", nargs="+", type=int, help="trash these record numbers")
-    ap.add_argument("--restore", nargs="+", type=int, help="untrash these record numbers")
+    ap.add_argument("--trash", nargs="+", type=rec_id_list,
+                    help="trash these record numbers (space- or comma-separated)")
+    ap.add_argument("--restore", nargs="+", type=rec_id_list,
+                    help="untrash these record numbers (space- or comma-separated)")
     ap.add_argument("--hard", action="store_true",
                     help="also delete satellite rows (backup + close EndNote first)")
     ap.add_argument("--all", action="store_true", help="list every reference, then exit")
     args = ap.parse_args(argv)
+
+    # `type=rec_id_list` runs once per token, so each flag arrives as a list of
+    # lists (["28,29"] -> [[28, 29]]). Flatten once here, at the single point
+    # before any consumer, so both flags mean "a flat list of record numbers".
+    if args.trash:
+        args.trash = [i for grp in args.trash for i in grp]
+    if args.restore:
+        args.restore = [i for grp in args.restore for i in grp]
 
     if args.restore:
         # Validate the ids, exactly as --trash does. Without this, `--restore 999`

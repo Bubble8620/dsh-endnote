@@ -166,8 +166,48 @@ console.log(JSON.stringify({{
         leaks = []
         pats = [r"[A-Za-z0-9._%+-]+@(?!example\.(?:com|org|net)\b)[A-Za-z0-9.-]+\.[A-Za-z]{2,}"]
         user = os.environ.get("USERNAME") or os.environ.get("USER") or Path.home().name
+
+        # The package's OWN declared repository identity is intentionally public:
+        # it is the URL users are told to clone and file issues at, and its
+        # `noreply` address is a GitHub-provided throwaway alias, not a real
+        # mailbox. Exempt exactly what package.json declares — read from the file,
+        # never hardcoded — so nothing personal is written down here AND a
+        # genuinely foreign address still fails.
+        #
+        # Without this the check is a false positive on the author's own machine:
+        # the declared handle is a prefix of the local Windows account name
+        # ("Bubble8620" vs USERNAME "Bubble"), and the declared noreply address
+        # trips the generic email pattern. That is the "checker that trains people
+        # to ignore it" failure mode, which is how a real leak gets through.
+        declared = ""
+        try:
+            pkg = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+            declared = " ".join(str(pkg.get(k) or "") for k in
+                                ("author", "homepage", "bugs", "repository"))
+        except (OSError, ValueError):
+            pass
+
+        # Handles named in the declared identity, e.g. {"Bubble8620"}. Matching is
+        # exact, so an address at any other domain or handle is still reported.
+        declared_handles = set(re.findall(r"([A-Za-z0-9_.-]+)@users\.noreply\.github\.com",
+                                          declared))
+        declared_handles |= set(re.findall(r"github\.com/([A-Za-z0-9_.-]+)/", declared))
+
         if user and user.lower() not in ("root", "user", "admin", "runner"):
             pats.append(rf"\b{re.escape(user)}\b")
+
+        # Author-specific patterns the environment cannot supply — an institutional
+        # repository host, say. They live in a git-ignored file because the literal
+        # is itself the disclosure; on a clean clone the file is absent and these
+        # checks simply do not apply. Without this the test silently missed
+        # `researchonline.lshtm.ac.uk` while `audit_publication.py` caught it, so
+        # the two disagreed about the same tree.
+        personal = ROOT / "tools" / "audit_publication.personal.txt"
+        if personal.is_file():
+            for line in personal.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    pats.append(line)
         bs = r"(?:\\{1,2}|/)"
         for anc in list(ROOT.parents)[:3]:
             parts = [p for p in anc.parts if p not in ("\\", "/")]
@@ -181,9 +221,18 @@ console.log(JSON.stringify({{
             except (UnicodeDecodeError, OSError):
                 continue
             for i, line in enumerate(text.splitlines(), 1):
+                # Redact ONLY the declared public handle before matching, so any
+                # other address, username or path sharing the line is still caught.
+                # (A whole-line skip would be too blunt: "author": "Real Name
+                # <real@corp.com>" would sail through.)
+                probe = line
+                for h in declared_handles:
+                    if h:
+                        probe = probe.replace(h, "<declared-handle>")
                 for p in pats:
-                    if re.search(p, line):
+                    if re.search(p, probe):
                         leaks.append(f"{f.relative_to(pkgdir)}:{i}")
+                        break
         check("no author paths / username / real email", not leaks,
               f"{len(leaks)}: {leaks[:4]}")
 

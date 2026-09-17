@@ -29,6 +29,28 @@ by `tools/test_data_loss_guards.py`:
 
 ### Fixed — from six independent audits
 
+- **`test_publication.py` disagreed with `audit_publication.py` about the same
+  tree**, in both directions. It reported the package's own declared
+  `noreply` address as a leak (a false positive that fires whenever the local
+  account name is a prefix of the public handle), while missing institutional
+  hosts entirely because it never read `audit_publication.personal.txt`. It now
+  **redacts only the declared public handle** before matching — so a real address
+  sharing that line is still caught, which a whole-line skip would have hidden —
+  and consults the same git-ignored pattern file as the audit. Verified against
+  three negative controls: a foreign email, an author path, and an institutional
+  domain are each still reported.
+- **`--trash` / `--restore` rejected the comma-separated spelling.** The sibling
+  tools in this suite (`endnote_groups --refs`, `endnote_add --group`) all take a
+  comma list, so `--trash 28,29` is the form reached for first; it died on
+  argparse's bare `invalid int value: '28,29'`, which reads as a broken tool
+  rather than a formatting difference. Both `--trash 28 29` and `--trash 28,29`
+  (and any mixing) now work. Ids are still validated **before** any write, so
+  `--trash 28,abc` changes nothing and names the offending token.
+- **`--restore` reported itself as "trashing".** The log verb was chosen from the
+  mechanism, not the direction, so an untrash printed `trashing 2 record(s)` —
+  in the one line a user reads to confirm what happened to their library. The
+  verb now follows the direction: `trashing` / `restoring` / `would restore`.
+
 - **`paper_pdf_survey.py` crashed on import** with `NameError: os` — an edit added
   `os.environ.get` without `import os`, and the vendoring step made it look
   internally consistent. It also ran its whole network survey at import time, so

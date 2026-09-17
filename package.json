@@ -43,6 +43,7 @@
     "audit": "python tools/audit_publication.py",
     "vendor": "python tools/normalize_bootstrap.py && python tools/vendor_scripts.py && python tools/vendor_skills.py"
   },
+  "_comment_peerDependencies": "Both peers are genuinely optional: lib/index.js falls back to a local defineTool and to a Standard Schema-compatible Config when they cannot be resolved (the normal case for a `link:` install, where Node resolves the real path and never sees the profile's node_modules).",
   "peerDependencies": {
     "@deepseek-ai/dsh-tools": "^0.1.5-rc.2",
     "@deepseek-ai/schemastery": "^3.18.2"

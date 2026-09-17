@@ -246,8 +246,13 @@ python <plugin>/scripts\endnote_dedupe.py --list      # report duplicates, chang
 python <plugin>/scripts\endnote_dedupe.py --dry-run   # show what would be trashed
 python <plugin>/scripts\endnote_dedupe.py             # trash duplicates (soft delete)
 python <plugin>/scripts\endnote_dedupe.py --trash 13 15       # specific records
+python <plugin>/scripts\endnote_dedupe.py --trash 13,15       # comma form also works
 python <plugin>/scripts\endnote_dedupe.py --restore 13        # undo a trash
 ```
+
+`--trash` and `--restore` accept either spelling (`13 15` or `13,15`, any
+mixing of spaces and commas). The record numbers are validated **before** any
+write, so `--trash 28,abc` changes nothing and names the bad token.
 
 It groups by **DOI** first, then by normalized title, and keeps the **most
 complete** copy (one with an attachment and more metadata) by default; use
