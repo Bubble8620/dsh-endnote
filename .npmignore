@@ -1,0 +1,48 @@
+# IMPORTANT — this file is NOT a second line of defence for `files`.
+#
+# When package.json sets `files`, npm uses that allowlist and .npmignore REPLACES
+# the default ignore list rather than intersecting with it. Verified empirically:
+# with files:["lib","scripts/*.py"] and .npmignore containing "lib/", npm packed
+# lib/ anyway. So a bad entry in `files` cannot be corrected here.
+#
+# The control that actually matters is the `files` allowlist in package.json. This
+# file is kept for the case where a package is packed WITHOUT `files`, and as
+# documentation of what must never be published.
+#
+# Why the distinction matters: `files: ["scripts"]` (the original value) shipped
+# the whole directory including scripts/__pycache__/*.pyc, which bake the build
+# machine's absolute paths into the tarball. That was fixed by narrowing `files`.
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Editor / OS noise
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+Desktop.ini
+
+# Maintainer-only scripts: they describe the author's own layout (the master
+# sources, the vendoring flow) and are not needed to run the plugin.
+tools/
+
+# Test and audit artefacts
+_survey*.txt
+*.log
+
+# User data that must never be published, even if present locally
+*.enl
+*.enlx
+*.eni
+*.Data/
+library.db
+library.db-*
+*.enw
+*.pdf
+oa-inbox/
+endnote-staging/
+endnote-backups/
+endnote.json

@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Node
+node_modules/
+npm-debug.log*
+pnpm-debug.log*
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+Desktop.ini
+
+# --- EndNote / plugin runtime artifacts -------------------------------------
+# These are user data, never source. Some are actively dangerous to commit:
+# a library working copy or an exported XML contains the user's whole
+# bibliography, and PDFs may be copyright-restricted.
+*.enl
+*.enlx
+*.Data/
+*.eni
+library.db
+library.db-shm
+library.db-wal
+*.enw
+
+# Staging output: downloaded PDFs, generated .enw files, survey logs
+**/oa-inbox/
+**/endnote-staging/
+_survey*.txt
+*.pdf
+
+# Logs. Not source, and a log from these tools is likely to quote an absolute
+# library path or a record title, so it is both noise and a mild disclosure.
+*.log
+logs/
+
+# Backups produced by endnote_backup.py
+endnote-backups/
+
+# Machine-local configuration that may embed absolute personal paths
+endnote.json
+
+# Author-specific audit patterns: the strings this file must recognise are
+# themselves identifying, so they live in a local, untracked file rather than in
+# the published code. See tools/audit_publication.py::_personal_patterns.
+tools/audit_publication.personal.txt
+
+# Windows
+*.lnk

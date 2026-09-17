@@ -1,0 +1,41 @@
+# dsh-endnote —— DSH bundle patch
+# ============================================================================
+# This is the plugin's "mount declaration". DSH stacks each bundle's patch when
+# it starts, so this file inserts the EndNote plugin row into the Web profile's
+# configuration tree.
+#
+# Install (no need to edit the profile patch by hand):
+#   dsh plugin --profile web add link:<absolute path to this directory>
+# or from a published package:
+#   dsh plugin --profile web add dsh-endnote
+#
+# All settings are optional. Leave `library` and `stagingDir` empty and the
+# scripts discover them (see scripts/endnote_paths.py):
+#   - `library`     : an existing endnote-mcp config already records the live
+#                     library, so a machine that has used EndNote MCP needs no
+#                     configuration here at all
+#   - `stagingDir`  : defaults to <DSH_HOME>/endnote-staging
+# ============================================================================
+
+- insert:
+    - id: dsh-endnote
+      name: dsh-endnote
+      config:
+        # Absolute path to your EndNote .enl library.
+        # Leave empty to auto-detect (DSH_ENDNOTE_LIBRARY, $DSH_HOME/endnote.json,
+        # the endnote-mcp config, then a scan of Documents/Desktop/Downloads).
+        library: ''
+        # Where downloaded PDFs and generated .enw files are staged. Must be
+        # writable. Empty -> <DSH_HOME>/endnote-staging
+        stagingDir: ''
+        # EndNote.EXE used to import .enw files. Empty -> auto-detect under
+        # Program Files / Program Files (x86).
+        # endnoteExe: 'C:\Program Files (x86)\EndNote 21\EndNote.EXE'
+        # Interpreter used to run the bundled Python scripts. Empty -> the
+        # interpreter running DSH.
+        # pythonExe: 'C:\path\to\python.exe'
+        # Per-tool-call timeout in milliseconds. Downloading a PDF can be slow,
+        # so the default is generous.
+        toolTimeoutMs: 300000
+        # Set false to register only the skills and skip the native tools.
+        registerTools: true

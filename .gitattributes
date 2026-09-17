@@ -1,0 +1,16 @@
+# Normalize line endings so a Windows checkout and a Linux CI agree.
+# Text files are stored with LF in the repository; the working copy gets the
+# platform-native ending.
+* text=auto eol=lf
+
+# Windows batch/PowerShell files are the exception: they must keep CRLF to run.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary — never touch these.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.eni binary
+*.db binary

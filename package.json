@@ -1,0 +1,66 @@
+{
+  "name": "dsh-endnote",
+  "version": "1.0.0",
+  "description": "EndNote library integration for the DeepSeek Harness: add papers with their open-access PDFs, manage attachments and groups, de-duplicate, and refresh the search index. Registers 2 skills and 7 native tools over one shared Python implementation.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "endnote",
+    "reference-manager",
+    "bibliography",
+    "pdf",
+    "open-access",
+    "literature",
+    "mcp"
+  ],
+  "type": "module",
+  "main": "lib/index.js",
+  "files": [
+    "lib",
+    "scripts/*.py",
+    "skills",
+    "cordis.patch.yml",
+    "README.md",
+    "CHANGELOG.md",
+    "AI-USAGE.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "os": [
+    "win32"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node tools/smoke_test.mjs && node tools/validate_patch.mjs",
+    "test:live": "node tools/e2e_test.mjs",
+    "audit": "python tools/audit_publication.py",
+    "vendor": "python tools/normalize_bootstrap.py && python tools/vendor_scripts.py && python tools/vendor_skills.py"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "^0.1.5-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Bubble8620/dsh-endnote.git"
+  },
+  "author": "Bubble8620 <Bubble8620@users.noreply.github.com>",
+  "homepage": "https://github.com/Bubble8620/dsh-endnote",
+  "bugs": "https://github.com/Bubble8620/dsh-endnote/issues"
+}
