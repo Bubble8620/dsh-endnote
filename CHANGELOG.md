@@ -6,6 +6,22 @@ versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed — the unused GitHub Actions publish workflow
+
+`.github/workflows/publish.yml` was written for OIDC trusted publishing while
+the npm 2FA block was being worked around. The package was ultimately published
+with a local token, so the workflow never ran a single time (verified: 0 runs)
+and nothing referenced it — no run, no tag, no doc.
+
+It was never in the npm tarball either: `files` excludes `.github`, and the
+published `dsh-endnote@1.0.0` tarball contains 20 files with no `.github` in
+them. So this only removes dead CI configuration from the repository.
+
+Worth keeping in mind if the account's 2FA ever blocks a token-based publish
+again: the OIDC route needs this file back, plus a matching Trusted Publisher
+entry on npmjs.com (user, repo, workflow filename, and `npm publish` as an
+allowed action).
+
 ### Added — published to npm, with a registry install path
 
 `dsh-endnote@1.0.0` is on the npm registry, so the README now leads with the
