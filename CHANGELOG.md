@@ -6,6 +6,35 @@ versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — MDPI papers are downloadable again, via the CDN
+
+`mdpi.com` 403s non-browser clients, which pushed every MDPI paper onto the
+full-text fallback path. The block is on the **website**, not on the files: the
+same PDF is served without a bot check from `mdpi-res.com`, a different host.
+Verified with an identical user agent — 403 from `www.mdpi.com`, 200 +
+`application/pdf` from `mdpi-res.com`.
+
+`_mdpi_candidates()` derives the CDN URL from Crossref metadata, so it needs no
+page scraping and no per-paper lookup:
+
+```
+https://mdpi-res.com/d_attachment/{slug}/{slug}-{vol}-{art:05d}/article_deploy/{slug}-{vol}-{art:05d}.pdf
+```
+
+Two details were measured rather than assumed, and each fails silently if wrong:
+
+- **The pad width is five digits.** `viruses-15-01737` is a 200;
+  `viruses-15-1737` is a 404.
+- **The slug needs two candidates.** The DOI-suffix stem is right when it is a
+  word (`ijms`, `foods`, `antibiotics`, `molecules` — 4/7) and the journal name
+  is right when the stem is a single letter (`v` → `viruses`, `ph` →
+  `pharmaceuticals`, `s` → `sensors` — 3/7). Trying both resolves **7/7**, so the
+  first candidate 404ing is normal, not a dead end.
+
+Verified end to end on both the master and the vendored copies: `10.3390/v15081737`
+and `10.3390/ijms21103715` download real `%PDF` bytes — the first via the second
+candidate, the second via the first.
+
 ### Removed — the unused GitHub Actions publish workflow
 
 `.github/workflows/publish.yml` was written for OIDC trusted publishing while

@@ -289,6 +289,63 @@ def _from_crossref(p: Paper) -> None:
             nm = " ".join(x for x in (a.get("given", ""), a.get("family", "")) if x)
             if nm or a.get("name"):
                 p.authors.append(nm or a["name"])
+    # MDPI 403s at the publisher but serves the same PDF from its CDN.
+    for url, source in _mdpi_candidates(p.doi, m):
+        p.add(url, source)
+
+
+def _mdpi_candidates(doi: str, m: dict) -> list[tuple[str, str]]:
+    """Derive MDPI's CDN URLs from Crossref metadata.
+
+    www.mdpi.com 403s every non-browser client, so an MDPI paper used to fall
+    through to the full-text fallback. The same PDF is served WITHOUT a bot
+    check from the `mdpi-res.com` CDN, which is a different host and therefore
+    not covered by the block (verified: identical user agent, 200 +
+    application/pdf from mdpi-res.com vs 403 from www.mdpi.com).
+
+        https://mdpi-res.com/d_attachment/{slug}/{slug}-{vol}-{art:05d}/article_deploy/{slug}-{vol}-{art:05d}.pdf
+
+    `art` is the article number and the pad width is FIVE digits (measured:
+    `viruses-15-01737` is a hit, `viruses-15-1737` is a 404).
+
+    The slug is not derivable from a single source, so BOTH candidates are
+    emitted and the caller keeps whichever returns real PDF bytes -- measured
+    over 7 MDPI DOIs spanning both kinds of abbreviation:
+
+        DOI-suffix slug alone  : 4/7  ('ijms','foods','antibiotics','molecules')
+        journal-name slug alone: 3/7  ('viruses','pharmaceuticals','sensors')
+        both, tried in order   : 7/7
+
+    The DOI stem is right when it is itself a word ('ijms'); the journal name
+    is right when the stem is a single letter ('v' -> viruses, 'ph' ->
+    pharmaceuticals, 's' -> sensors). Trying both avoids having to encode which
+    journals abbreviate to one letter.
+    """
+    if not doi.lower().startswith("10.3390/"):
+        return []
+
+    journal = _clean((m.get("container-title") or [""])[0])
+    vol = str(m.get("volume") or "").strip()
+    # MDPI paginates per article and Crossref reports that number as `page`.
+    # Require plain digits so a real page range ("1234-1240") is rejected
+    # rather than turned into a bogus article number.
+    page = str(m.get("page") or "").strip()
+    art = page if page.isdigit() else str(m.get("article-number") or "").strip()
+    if not (journal and vol and art.isdigit()):
+        return []
+
+    slugs: list[str] = []
+    stem_from_doi = re.sub(r"\d.*$", "", doi.split("/", 1)[1])
+    for slug in (stem_from_doi, re.sub(r"[^a-z0-9]", "", journal.lower())):
+        if slug and slug not in slugs:
+            slugs.append(slug)
+
+    out: list[tuple[str, str]] = []
+    for slug in slugs:
+        stem = f"{slug}-{vol}-{int(art):05d}"
+        out.append((f"https://mdpi-res.com/d_attachment/{slug}/{stem}"
+                    f"/article_deploy/{stem}.pdf", "MDPI CDN"))
+    return out
 
 
 def _clean(t: str | None) -> str:

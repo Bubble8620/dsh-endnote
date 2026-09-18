@@ -52,16 +52,54 @@ Measured on this machine — this is the whole reason a fallback chain is needed
 | **frontiersin.org** | PDF ✅ |
 | **bmcmicrobiol.biomedcentral.com** | PDF ✅ |
 | **institutional repositories**  | PDF ✅ |
+| **mdpi-res.com** (MDPI CDN) | PDF ✅ — **the block below does not apply to it** |
 | mdpi.com | **403** ❌ |
 | europepmc.org (`?pdf=render`) | **403** ❌ |
 | pubs.acs.org | **403** ❌ |
 | pubs.rsc.org | **403** ❌ |
 | pmc.ncbi.nlm.nih.gov/.../pdf/ | HTML, not a PDF ⚠️ |
 
-A single "grab the OA link and download it" step fails roughly half the time,
-because the most common OA hosts (MDPI, Europe PMC) are exactly the ones that
-block non-browser clients. Never conclude "this paper has no PDF" from one 403 —
-**try the other routes**.
+### MDPI is recoverable — use the CDN, not the publisher
+
+The `mdpi.com` 403 is a bot check on the **website**. The same PDF is served
+without one from the `mdpi-res.com` CDN, which is a *different host* and so is
+not covered by the block. Verified with an identical user agent: 403 from
+`www.mdpi.com`, 200 + `application/pdf` from `mdpi-res.com`.
+
+The URL is **derivable from Crossref metadata** — no page scraping, no
+per-paper lookup:
+
+```
+https://mdpi-res.com/d_attachment/{slug}/{slug}-{vol}-{art:05d}/article_deploy/{slug}-{vol}-{art:05d}.pdf
+```
+
+- `vol` = Crossref `volume`; `art` = Crossref `page` (MDPI paginates per
+  article, so `page` *is* the article number — reject it unless it is plain
+  digits, since a real page range like `1234-1240` would build a bogus URL).
+- **Pad width is FIVE digits.** Measured: `viruses-15-01737` → 200, but
+  `viruses-15-1737` → 404. Getting this wrong fails silently as a 404.
+- `slug` is **not** derivable from one source. Emit **both** candidates and keep
+  whichever returns a PDF — measured over 7 MDPI DOIs:
+
+  | slug source | hits |
+  |---|---|
+  | DOI-suffix stem alone | 4/7 (`ijms`, `foods`, `antibiotics`, `molecules`) |
+  | journal-name slug alone | 3/7 (`viruses`, `pharmaceuticals`, `sensors`) |
+  | **both, in that order** | **7/7** |
+
+  The DOI stem is correct when it is itself a word (`ijms`); the journal name is
+  correct when the stem is a single letter (`v` → `viruses`, `ph` →
+  `pharmaceuticals`, `s` → `sensors`). Trying both avoids encoding which journals
+  abbreviate to one letter. In practice the first candidate often 404s and the
+  second succeeds, so **a 404 there is normal, not a dead end**.
+
+`tools/paper_pdf.py` implements this in `_mdpi_candidates()`; it is called from
+`_from_crossref()`, so any MDPI DOI gets these candidates automatically.
+
+A single "grab the OA link and download it" step fails often, because the most
+common OA hosts (MDPI, Europe PMC) block non-browser clients *on their article
+pages*. Never conclude "this paper has no PDF" from one 403 — **try the other
+routes**, and remember MDPI has a working CDN route that needs no browser.
 
 ## The fallback order that matters
 
@@ -86,11 +124,18 @@ block non-browser clients. Never conclude "this paper has no PDF" from one 403 �
 
 ## The 403s are real — don't burn time on workarounds
 
-Cloudflare bot detection on MDPI/ACS/RSC/EPMC rejects:
+Cloudflare bot detection on MDPI/ACS/RSC/EPMC rejects (measured on the
+publisher *websites*):
 
 - browser User-Agent strings ❌
 - Referer headers ❌
 - a configured HTTP proxy (`DSH_ENDNOTE_PROXY`; unset by default) ❌
+
+**But a 403 from one host says nothing about another host for the same paper.**
+That is the whole point of the MDPI CDN route above: `www.mdpi.com` 403s and
+`mdpi-res.com` serves the identical PDF, same user agent. Before falling back to
+full text, ask whether the publisher runs a separate asset domain — the 403 is
+usually on the HTML site, not on the CDN that actually holds the files.
 
 **Headless Chrome was tested and does not help** — `--headless=new` with
 `--download-directory` downloaded nothing usable and hung. Do not retry that
