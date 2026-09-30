@@ -66,7 +66,7 @@ try {
 }
 
 console.log('\n=== registered skills ===')
-check('2 skills registered', registered.skills.length === 2, String(registered.skills.length))
+check('3 skills registered', registered.skills.length === 3, String(registered.skills.length))
 for (const s of registered.skills) {
   const hasBody = typeof s.content === 'string' && s.content.length > 500
   check(`skill "${s.name}" has description`, typeof s.description === 'string' && s.description.length > 20)
@@ -78,9 +78,10 @@ for (const s of registered.skills) {
 
 console.log('\n=== registered tools ===')
 const names = registered.tools.map((t) => t.name)
-check('7 tools registered', registered.tools.length === 7, JSON.stringify(names))
+check('8 tools registered', registered.tools.length === 8, JSON.stringify(names))
 for (const expected of ['endnote_add', 'endnote_attach', 'endnote_status',
-  'endnote_dedupe', 'endnote_groups', 'paper_pdf', 'endnote_refresh']) {
+  'endnote_dedupe', 'endnote_groups', 'paper_pdf', 'endnote_refresh',
+  'endnote_digest']) {
   check(`tool ${expected} present`, names.includes(expected))
 }
 for (const t of registered.tools) {
@@ -126,7 +127,7 @@ apply({
   skills: { register: (s) => { reg2.skills.push(s); return () => {} } },
   effect: (fn) => fn(),
 }, new Config({ registerTools: false }))
-check('skills still registered (2)', reg2.skills.length === 2, String(reg2.skills.length))
+check('skills still registered (3)', reg2.skills.length === 3, String(reg2.skills.length))
 check('no tools registered', reg2.tools.length === 0, String(reg2.tools.length))
 
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : failures + ' CHECK(S) FAILED'}`)

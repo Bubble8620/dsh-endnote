@@ -6,6 +6,112 @@ versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — compatible with DSH 0.2.0
+
+DSH 0.2.0 added a compatibility gate that **skips the whole bundle** when any
+`@deepseek-ai/dsh*` peer dependency fails `semver.satisfies(runtime, range,
+{ includePrerelease: true })` (`evaluatePluginCompatibility` in
+`@deepseek-ai/dsh-app-boot`, called from `loadProfileDirectory`). The plugin's
+`^0.1.5-rc.2` range excluded 0.2.0-rc.1, so 0.2.0 silently dropped the plugin:
+
+```
+dsh: skipping profile bundle "dsh-endnote": Error: Plugin dsh-endnote@1.0.0-dev
+is incompatible with dsh 0.2.0-rc.1: peerDependencies {"@deepseek-ai/dsh-tools":"^0.1.5-rc.2"}.
+```
+
+- The peer range is now `>=0.1.5-rc.2`, verified compatible against 0.2.0-rc.1
+  by calling dsh-app-boot's own `evaluatePluginCompatibility` rather than a
+  reimplementation. An open-ended range was chosen over `^0.2.0-rc.1` so the
+  next 0.3.0 does not silently disable the plugin again; the plugin carries its
+  own probe for the parts that actually differ.
+
+- That probe is the second half of the fix, and it matters independently of the
+  range. `defineTool` changed regimes between 0.1.x and 0.2.x: 0.2.x calls
+  `parameterSchemaSpecToJsonSchema(options.parameters)` **inside** `defineTool`,
+  and its compiler rejects an already-compiled object-rooted schema with
+  `parameters.type must be a value schema object`; 0.1.x wanted the compiled
+  form. The plugin now probes the regime once at load with a throwaway
+  definition and compiles the author map itself only in the compiled regime.
+  Verified both ways: with 0.2.0's `dsh-tools` on the resolution path the author
+  map compiles to an object root with `required` lifted correctly; with it
+  absent (the normal `link:` install) the fallback produces the compiled shape
+  the provider expects.
+
+- Result: `--dump-config` under 0.2.0-rc.1 composes the `dsh-endnote` layer, it
+  no longer appears in the skip list, and the full suite passes (8 tools /
+  3 skills, data-loss guards, package verification).
+
+Note: `dsh-mobile`, `dsh-codearts-auth` and `dsh-provider-probe` were also
+skipped by the same gate on this profile. That is their maintainers' fix to
+make, not this plugin's.
+
+### Fixed — skill routing: the triggers were in a field the model never sees
+
+A skill was not being loaded when a user asked, in Chinese, for a paper to be
+解读. Two independent causes, both measured:
+
+1. **`whenToUse` is never rendered into the session skill catalog.** The catalog
+   entry is built by `renderCatalogEntries` in `@deepseek-ai/dsh-tool-skill`,
+   which emits exactly ``- `<name>`: <description>`` — `name` and `description`
+   only. `whenToUse` is carried on the summary object but does not reach the
+   model, so the Chinese trigger phrases parked there (`解读`, `翻译`, `详读`,
+   `加入我的endnote库`, `获取/下载`) did nothing for routing. All three skills now
+   lead their **description** with those triggers, in Chinese, before the English
+   gloss. This is the field that decides whether a skill is loaded.
+
+2. **A plugin-provided skill cannot appear without a plugin reload.** The `hmr`
+   plugin is `disabled: true` in the web profile, so the running server keeps the
+   skill list it booted with. `endnote-digest` was created hours after the
+   server started, so it was simply absent from the catalog. Skills under
+   `$DSH_HOME/skills` are watched and appear live; plugin-provided ones are not.
+
+Note for whoever edits these files next: the plugin's frontmatter reader is a
+line regex (`^<key>:\s*(.+)$`), **not** a YAML parser. A YAML block scalar
+(`>-`) is read literally as the two characters `>-`, which silently blanked
+every skill description when tried. Descriptions must be a **single
+double-quoted line**, and a double quote inside the value cannot be escaped.
+
+### Added — literature reading notes (`endnote_digest`)
+
+A new tool and skill that turn an EndNote record into a Chinese reading note:
+a metadata header (题目 / 刊名 / IF / DOI), abstract translation, full-text
+translation and interpretation, written into `<workspace>/文献解读/` and
+attached back to the record.
+
+The division of labour is the point: the script does the **mechanical** half —
+resolve the record, look up the journal metric, extract the full text, scaffold
+the note with the facts filled in — and the **agent writes the prose**. A script
+cannot do the translation or the interpretation, so rather than pretend
+otherwise it emits `TODO(agent)` markers and says so on stdout.
+
+Measured details worth keeping:
+
+- **The IF is a proxy and is labelled as one.** The JCR Impact Factor is
+  Clarivate's commercial data; no free API carries it. OpenAlex
+  `2yr_mean_citedness` is reported to one decimal, with a blockquote in the note
+  saying what it is. It is a reference figure, not the official number.
+- **Full text prefers the dependency-free route.** Europe PMC JATS XML via the
+  existing `paper_pdf` module needs nothing beyond the standard library. Local
+  PDF extraction needs PyMuPDF and is therefore **optional** — an earlier
+  version imported it at module scope, which broke the project's rule that
+  shipped scripts declare no third-party Python dependency
+  (`tools/test_imports.py` caught it).
+- **EndNote separates authors with a bare CR.** It leaked into a generated
+  filename as `OSError: [Errno 22] Invalid argument`, so all control characters
+  are now stripped, and both `Surname, Given` and `Given Surname` are handled.
+- **The scaffold refuses to overwrite an existing note** (`--force` to insist).
+  A note is hand-written work and there is no undo.
+- **A duplicate filename is refused at attach time**, so a record cannot quietly
+  accumulate near-identical notes.
+- **`(refs_id, file_pos)` is UNIQUE and is read inside the write transaction**,
+  so a stale position can neither raise `IntegrityError` nor displace another
+  attachment.
+
+Verified end to end: `10.3390/v15081737` on record #31 and
+`10.3389/fphar.2021.675440` on record #12 both produced a note and attached it,
+and a `.md` attachment was confirmed to survive in a live EndNote 21 session
+alongside the paper's PDF.
+
 ### Added — MDPI papers are downloadable again, via the CDN
 
 `mdpi.com` 403s non-browser clients, which pushed every MDPI paper onto the

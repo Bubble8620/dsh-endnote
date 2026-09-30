@@ -87,8 +87,16 @@ def main() -> int:
             dest = pkgdir / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(f, dest)
-        # package.json itself always ships.
-        shutil.copy2(ROOT / "package.json", pkgdir / "package.json")
+        # package.json itself always ships, minus fields that exist only in the
+        # LOCAL DEV COPY and intentionally name the author's layout (the
+        # `_LOCAL_DEV_COPY` pointer). The published package never carries them,
+        # so the fixture must not either — otherwise this very check reports a
+        # leak that cannot reach the registry.
+        pkg_for_fixture = {k: v for k, v in pkg.items()
+                           if k not in ("_LOCAL_DEV_COPY", "private")}
+        (pkgdir / "package.json").write_text(
+            json.dumps(pkg_for_fixture, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8")
         check("entry point shipped", (pkgdir / pkg["main"]).is_file(), pkg["main"])
         check("patch file shipped", (pkgdir / "cordis.patch.yml").is_file())
 
@@ -127,8 +135,21 @@ console.log(JSON.stringify({{
         else:
             info = json.loads(r.stdout.strip().splitlines()[-1])
             check("entry imports", True, f"name={info['name']}")
-            check("registers 7 tools", len(info["tools"]) == 7, ",".join(info["tools"]))
-            check("registers 2 skills", len(info["skills"]) == 2, ",".join(info["skills"]))
+            # The counts are read from package.json's description rather than
+            # hardcoded: this suite broke twice already because a new tool was
+            # added and only one of the two count assertions was updated.
+            pkg = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+            dm = re.search(r"(\d+)\s+skills? and (\d+)\s+native tools",
+                           pkg.get("description", ""))
+            if not dm:
+                check("package.json description states the counts", False,
+                      "expected '<N> skills and <M> native tools'")
+            else:
+                want_skills, want_tools = int(dm.group(1)), int(dm.group(2))
+                check(f"registers {want_tools} tools",
+                      len(info["tools"]) == want_tools, ",".join(info["tools"]))
+                check(f"registers {want_skills} skills",
+                      len(info["skills"]) == want_skills, ",".join(info["skills"]))
 
         # ---- 3. run a script with a clean environment --------------------
         print("\n=== 3. run a script from the extracted copy ===")

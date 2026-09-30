@@ -1,7 +1,7 @@
 {
   "name": "dsh-endnote",
-  "version": "1.0.0",
-  "description": "EndNote library integration for the DeepSeek Harness: add papers with their open-access PDFs, manage attachments and groups, de-duplicate, and refresh the search index. Registers 2 skills and 7 native tools over one shared Python implementation.",
+  "version": "1.1.0",
+  "description": "EndNote library integration for the DeepSeek Harness: add papers with their open-access PDFs, manage attachments and groups, de-duplicate, and refresh the search index. Registers 3 skills and 8 native tools over one shared Python implementation.",
   "keywords": [
     "dsh",
     "dsh-plugin",
@@ -43,9 +43,9 @@
     "audit": "python tools/audit_publication.py",
     "vendor": "python tools/normalize_bootstrap.py && python tools/vendor_scripts.py && python tools/vendor_skills.py"
   },
-  "_comment_peerDependencies": "Both peers are genuinely optional: lib/index.js falls back to a local defineTool and to a Standard Schema-compatible Config when they cannot be resolved (the normal case for a `link:` install, where Node resolves the real path and never sees the profile's node_modules).",
+  "_comment_peerDependencies": "Both peers are genuinely optional: lib/index.js falls back to a local defineTool and to a Standard Schema-compatible Config when they cannot be resolved (the normal case for a `link:` install, where Node resolves the real path and never sees the profile's node_modules). The dsh-tools range spans 0.1.5 through 0.2.x: DSH 0.2.0 gates every @deepseek-ai/dsh* peer through evaluatePluginCompatibility (semver.satisfies with includePrerelease) and SKIPS the whole bundle on a mismatch, so a narrow range silently disables the plugin on upgrade. `>=0.1.5-rc.2` was verified compatible against 0.2.0-rc.1 using dsh-app-boot's own evaluatePluginCompatibility.",
   "peerDependencies": {
-    "@deepseek-ai/dsh-tools": "^0.1.5-rc.2",
+    "@deepseek-ai/dsh-tools": ">=0.1.5-rc.2",
     "@deepseek-ai/schemastery": "^3.18.2"
   },
   "peerDependenciesMeta": {

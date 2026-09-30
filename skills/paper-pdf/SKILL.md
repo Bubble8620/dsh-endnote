@@ -1,7 +1,7 @@
 ---
 name: paper-pdf
-description: "Find and download the open-access PDF of a paper from a DOI, PMID, arXiv id, or title, and extract its full text when no PDF is obtainable. Knows which publishers block automated downloads and which mirrors to fall back on."
-whenToUse: "Use when the user wants the PDF of a paper, asks to download/获取/下载 a paper or its 全文/PDF, needs a paper's full text for reading or extraction, or when the EndNote importer could not fetch a PDF automatically. Also use before attaching a PDF to an EndNote reference, to obtain the file in the first place."
+description: "下载论文的开放获取 PDF（取不到时回退全文），并知道哪些出版商拦截自动下载、该走哪个镜像。Find and download the open-access PDF of a paper from a DOI, PMID, arXiv id, or title, extracting its full text when no PDF is obtainable. Use when the user asks to 下载/获取/拿一下 a paper or its 全文/PDF, or when a PDF must be obtained before attaching it to EndNote."
+whenToUse: "用户要某篇论文的 PDF 或全文时；或在挂到 EndNote 之前需要先拿到文件时。"
 ---
 
 <!--

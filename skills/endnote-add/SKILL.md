@@ -1,7 +1,7 @@
 ---
 name: endnote-add
-description: "Add a paper to the user's EndNote library from a DOI, PMID, title, or URL — typically right after finding it via web search — and attach its open-access PDF. Resolves metadata from Crossref/Europe PMC/OpenAlex, writes a tagged .enw using EndNote's own field codes, hands it to EndNote, verifies the record landed, and can attach a PDF the user supplies to an existing reference."
-whenToUse: "Use when the user wants a paper added to their EndNote library — e.g. they say '加入我的endnote库', 'add this to my EndNote', 'import this paper', or after you find an article they express interest in. Also use when they want a PDF attached to an existing EndNote reference, or hand you a PDF to attach. Works from a DOI, a PMID/PMCID, a title, a journal URL, or a local PDF file."
+description: "把一篇文献加入 EndNote 库（自动附开放获取 PDF），或给库里已有条目补/换 PDF。Add a paper to the user's EndNote library from a DOI, PMID, title, or URL, attaching its open-access PDF; also attach a PDF the user supplies to an existing reference. Resolves metadata from Crossref/Europe PMC/OpenAlex and verifies the record landed. Use when the user says 加入endnote库、导入文献、加这篇、补附件、贴PDF, or 'add this to my EndNote'."
+whenToUse: "用户要求把文献加入 EndNote 库、或给已有条目补/换 PDF 时；通常在检索到文献之后。Works from a DOI, PMID/PMCID, title, journal URL, or a local PDF file."
 ---
 
 <!--

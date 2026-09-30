@@ -16,6 +16,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -147,6 +148,18 @@ CONVENTIONAL = [
 ]
 
 SKIP_DIRS = {"__pycache__", ".git", "node_modules"}
+#: Files that are part of the LOCAL DEV COPY only and are never shipped (they
+#: are not in package.json `files`). LOCAL-VS-PUBLISHED.md necessarily names the
+#: author's absolute workspace paths — that is its whole job — so it must be
+#: excluded here rather than sanitised, and its presence in the tree is not a
+#: publication risk. Keep this in step with `files` in package.json: anything
+#: listed there must NOT be in this set, or the audit stops covering a file that
+#: actually ships.
+DEV_ONLY_FILES = {"LOCAL-VS-PUBLISHED.md", "guard_local_publish.py"}
+#: Fields that exist only in the dev copy's package.json and intentionally name
+#: the author's local layout (the `_LOCAL_DEV_COPY` pointer). The audit checks
+#: what would PUBLISH, so these are stripped before scanning package.json.
+DEV_ONLY_PACKAGE_FIELDS = ("_LOCAL_DEV_COPY",)
 
 #: This file contains the patterns by design, as does the self-test that
 #: demonstrates the escaping trap.
@@ -159,6 +172,8 @@ def iter_files(include_tools: bool) -> list[Path]:
         if not p.is_file():
             continue
         if any(part in SKIP_DIRS for part in p.parts):
+            continue
+        if p.name in DEV_ONLY_FILES:
             continue
         if p.name in SELF:
             continue
@@ -186,6 +201,17 @@ def main() -> int:
             text = f.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
+        # package.json in the dev copy carries dev-only fields that deliberately
+        # name the local layout. The audit answers "what would publish", and
+        # those fields would not, so drop them before scanning.
+        if f.name == "package.json":
+            try:
+                pkg = json.loads(text)
+                for field in DEV_ONLY_PACKAGE_FIELDS:
+                    pkg.pop(field, None)
+                text = json.dumps(pkg, indent=2, ensure_ascii=False)
+            except ValueError:
+                pass
         for i, line in enumerate(text.splitlines(), 1):
             for pattern, label in BLOCKING:
                 if re.search(pattern, line):

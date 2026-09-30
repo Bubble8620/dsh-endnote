@@ -137,6 +137,21 @@ and only needed to make records searchable.
 | `endnote_status` | Health check: install, library sources, index sync, APIs |
 | `paper_pdf` | Download an OA PDF, or its full text |
 | `endnote_refresh` | Re-export the library and rebuild the search index |
+| `endnote_digest` | Scaffold a Chinese reading note for a record (metadata + IF + full text) into `<workspace>/文献解读/`, then attach the finished note back to the reference |
+
+**Reading notes.** `endnote_digest` does the mechanical half — it resolves the
+record, looks up a journal metric, extracts the full text, and writes a note with
+the facts filled in and the prose left as `TODO(agent)` markers. The translation
+and interpretation are written by the agent, which reads the paper; a script
+cannot do that part, so it does not pretend to.
+
+```powershell
+python scripts/endnote_digest.py --list      # find the record
+python scripts/endnote_digest.py 21          # scaffold the note and attach it
+```
+
+The impact factor shown is an **open-data proxy** (OpenAlex
+`2yr_mean_citedness`), not the commercial JCR figure, and the note says so.
 
 **Adding a paper files it into a group automatically.** By default `endnote_add`
 chooses the best-matching **existing custom** group and files the record there:
@@ -171,8 +186,9 @@ import, files the record, and rebuilds the search index. `--wait SECONDS` bounds
 the wait for the import (default 30), after which the tool reports what did not
 happen instead of hanging.
 
-Skills: **`endnote-add`** (library workflows and their traps) and **`paper-pdf`**
-(publisher-by-publisher PDF retrieval strategy).
+Skills: **`endnote-add`** (library workflows and their traps),
+**`paper-pdf`** (publisher-by-publisher PDF retrieval strategy), and
+**`endnote-digest`** (how to write a reading note, and the traps in it).
 
 ### Design notes
 
@@ -274,6 +290,8 @@ is lower.
 - **查重清理** —— 找重复记录并移入回收站(可恢复)
 - **刷新索引** —— 让新记录能被检索到
 - **单独下载 OA PDF** —— 取不到 PDF 时回退全文
+- **文献解读** —— 给某条记录生成中文解读（题目/刊名/IF/DOI + 摘要译文 +
+  全文翻译与解读），写入工作区 `文献解读/` 并挂回 EndNote 条目
 
 **全程无需关闭 EndNote。**
 

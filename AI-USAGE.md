@@ -114,10 +114,10 @@ has been attacked.* `tools/verify_package.py`, `tools/test_discovery.py` and
 was silently blind in three separate ways.
 
 That episode also produced the tiered design now in `audit_publication.py`:
-BLOCKING (author-identifying) versus CONVENTIONAL (`C:\Program Files (x86)\EndNote 21`
-is the same on every machine). The split exists so the report stays short enough
-to read — a checker that cries wolf gets ignored, which is how a real leak slips
-through.
+BLOCKING (author-identifying) versus CONVENTIONAL (EndNote's own install
+directory, identical on every machine). The split exists so the report stays short
+enough to read — a checker that cries wolf gets ignored, which is how a real leak
+slips through.
 
 ## Risk statement
 
